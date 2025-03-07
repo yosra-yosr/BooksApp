@@ -224,7 +224,7 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
             {item.description}
           </Text>
           <View style={styles.footer}>
-            <Text style={styles.price}>€{item.price.toFixed(2)}</Text>
+            <Text style={styles.price}>{item.price.toFixed(2)} TND</Text>
             <View style={styles.actionButtons}>
               <TouchableOpacity
                 style={[styles.iconButton, styles.editButton]}
