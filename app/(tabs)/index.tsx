@@ -67,7 +67,7 @@ export default function Index({ navigation }: { navigation: any }) {
             {item.description}
           </ThemedText>
           <View style={styles.priceContainer}>
-            <ThemedText style={styles.price}>{item.price} €</ThemedText>
+            <ThemedText style={styles.price}>{item.price} TND</ThemedText>
             <Ionicons name="chevron-forward" size={16} color={COLORS.secondary} />
           </View>
         </View>

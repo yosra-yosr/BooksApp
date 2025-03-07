@@ -16,7 +16,7 @@ export default function Details({ route, navigation }: { route: any, navigation:
         {/* <Image source={book.image} style={styles.bookImage} /> */}
         <Text style={styles.title}>{book.title}</Text>
         <Text style={styles.description}>{book.description}</Text>
-        <Text style={styles.price}>${book.price}</Text>
+        <Text style={styles.price}>{book.price} TND</Text>
 
         <TouchableOpacity
           style={styles.addToCartButton}
