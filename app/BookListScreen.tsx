@@ -5,16 +5,38 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
   Image,
   ActivityIndicator,
   RefreshControl,
   Alert,
+  SafeAreaView,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { initDatabase, getBooks, deleteBook, createBook } from './db';
-import { updateBookInAPI,addBookToAPI,fetchBooksFromAPI } from './api';
+import { updateBookInAPI, addBookToAPI, fetchBooksFromAPI } from './api';
 import { SQLiteDatabase } from 'expo-sqlite';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Définition de la charte graphique
+const COLORS = {
+  primary: '#8BC34A', // Vert clair principal
+  secondary: '#689F38', // Vert foncé pour les accents
+  background: '#F5FFF0', // Fond très légèrement teinté de vert
+  white: '#FFFFFF',
+  text: '#2E3A23', // Texte foncé
+  lightText: '#6B7F5C', // Texte secondaire
+  error: '#FF5252',
+  success: '#4CAF50',
+  border: '#E0E0E0',
+  card: '#FFFFFF',
+  shadow: '#000000',
+  price: '#689F38',
+  iconGray: '#757575',
+  separatorColor: '#EDEDED',
+};
+
 interface Book {
   id: number;
   title: string;
@@ -33,8 +55,7 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
-
+  const [adminInfo, setAdminInfo] = useState({ name: 'Administrateur' });
 
   const syncBooks = async (sqliteBooks: Book[], apiBooks: Book[], db: SQLiteDatabase) => {
     try {
@@ -77,9 +98,6 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
       console.error("Erreur lors de la synchronisation :", error);
     }
   };
-  
-  
-
 
   const fetchBooks = async () => {
     setIsLoading(true);
@@ -106,10 +124,33 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
     }
   };
   
-  
-  
-  
-  
+  useEffect(() => {
+    const checkAuth = async () => {
+      const role = await AsyncStorage.getItem('userRole');
+      if (!role) {
+        navigation.replace('LoginScreen'); // Rediriger si pas connecté
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Déconnexion',
+      'Êtes-vous sûr de vouloir vous déconnecter ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Déconnexion', 
+          style: 'destructive',
+          onPress: async () => {
+            await AsyncStorage.removeItem('userRole');
+            navigation.replace('LoginScreen');
+          } 
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
     fetchBooks();
@@ -128,12 +169,9 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
 
   const handleEdit = (book: Object) => {
     navigation.navigate('UpdateBookScreen', { book });
-    
   };
 
   const handleDelete = async (bookId: number, bookTitle: string) => { 
-    console.log(`Tentative de suppression: ID=${bookId}, Titre="${bookTitle}"`);
-  
     Alert.alert(
       'Confirmation de suppression',
       `Êtes-vous sûr de vouloir supprimer "${bookTitle}" ?`,
@@ -157,8 +195,6 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
       { cancelable: true }
     );
   };
-  
-  
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -167,24 +203,10 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
 
   const renderItem = ({ item }: { item: Book }) => (
     <View style={styles.card}>
-      <View style={styles.adminActions}>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => handleEdit(item)}
-        >
-          <Icon name="pencil" size={20} color="#666" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => handleDelete(item.id, item.title)}
-        >
-          <Icon name="delete" size={20} color="#ff4444" />
-        </TouchableOpacity>
-      </View>
-
       <TouchableOpacity
         style={styles.contentContainer}
         onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
+        activeOpacity={0.8}
       >
         <View style={styles.imageContainer}>
           <Image
@@ -195,168 +217,346 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
         </View>
 
         <View style={styles.bookInfo}>
-          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+            {item.title}
+          </Text>
           <Text style={styles.description} numberOfLines={2}>
             {item.description}
           </Text>
           <View style={styles.footer}>
             <Text style={styles.price}>€{item.price.toFixed(2)}</Text>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={[styles.iconButton, styles.editButton]}
+                onPress={() => handleEdit(item)}
+              >
+                <Icon name="pencil" size={16} color={COLORS.white} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.iconButton, styles.deleteButton]}
+                onPress={() => handleDelete(item.id, item.title)}
+              >
+                <Icon name="delete" size={16} color={COLORS.white} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
     </View>
   );
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Liste des Livres</Text>
-      
-      {error && <Text style={styles.error}>{error}</Text>}
-      
-      <FlatList
-        data={books}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#2ecc71" />
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>Aucun livre disponible</Text>
-          )
-        }
-      />
-
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => navigation.navigate('AddBookScreen')}
-      >
-        <Icon name="plus" size={30} color="#ffffff" />
-      </TouchableOpacity>
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      <View style={styles.headerContent}>
+        <View>
+          <Text style={styles.welcomeText}>Bonjour,</Text>
+          <Text style={styles.adminName}>{adminInfo.name}</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
+          <Icon name="logout" size={22} color={COLORS.white} />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <Icon name="book-multiple" size={24} color={COLORS.primary} />
+          <Text style={styles.statCount}>{books.length}</Text>
+          <Text style={styles.statLabel}>Livres</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Icon name="sync" size={24} color={COLORS.primary} />
+          <Text style={styles.statCount}>100%</Text>
+          <Text style={styles.statLabel}>Synchronisé</Text>
+        </View>
+      </View>
     </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar
+        backgroundColor={COLORS.background}
+        barStyle="dark-content"
+      />
+      <View style={styles.container}>
+        {renderHeader()}
+
+        <View style={styles.listHeaderContainer}>
+          <Text style={styles.listHeader}>Catalogue de livres</Text>
+          <TouchableOpacity 
+            style={styles.refreshButton}
+            onPress={onRefresh}
+          >
+            <Icon name="refresh" size={20} color={COLORS.secondary} />
+          </TouchableOpacity>
+        </View>
+
+        {error && (
+          <View style={styles.errorContainer}>
+            <Icon name="alert-circle" size={20} color={COLORS.error} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        <FlatList
+          data={books}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
+          ListEmptyComponent={
+            isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.loadingText}>Chargement des livres...</Text>
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Icon name="bookshelf" size={60} color={COLORS.lightText} />
+                <Text style={styles.emptyText}>Aucun livre disponible</Text>
+                <Text style={styles.emptySubText}>Ajoutez votre premier livre en cliquant sur le bouton +</Text>
+              </View>
+            )
+          }
+        />
+
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate('AddBookScreen')}
+          activeOpacity={0.8}
+        >
+          <Icon name="plus" size={30} color={COLORS.white} />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  safeArea: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#666',
-    marginTop: 20,
+    backgroundColor: COLORS.background,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
-  header: {
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+    backgroundColor: COLORS.background,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  welcomeText: {
+    fontSize: 16,
+    color: COLORS.lightText,
+  },
+  adminName: {
     fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 20,
-    color: '#333',
+    color: COLORS.text,
+  },
+  logoutButton: {
+    backgroundColor: COLORS.secondary,
+    padding: 10,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 15,
+    marginHorizontal: 5,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  statCount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginVertical: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: COLORS.lightText,
+  },
+  listHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  listHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  refreshButton: {
+    padding: 5,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.error + '20', // 20% opacity
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginBottom: 15,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
   },
   listContainer: {
     padding: 16,
     paddingBottom: 80,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
     marginBottom: 16,
     elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-  },
-  adminActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 8,
-  },
-  iconButton: {
-    padding: 8,
-    marginLeft: 8,
+    overflow: 'hidden',
   },
   contentContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   imageContainer: {
-    marginRight: 12,
+    padding: 12,
   },
   thumbnail: {
     width: 80,
     height: 120,
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: COLORS.separatorColor,
   },
   bookInfo: {
     flex: 1,
+    padding: 16,
+    paddingLeft: 0,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    color: COLORS.text,
+    marginBottom: 6,
   },
   description: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+    color: COLORS.lightText,
+    marginBottom: 10,
+    lineHeight: 20,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
-    paddingTop: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: COLORS.separatorColor,
   },
   price: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2ecc71',
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.price,
   },
-  error: {
-    color: '#ff4444',
+  actionButtons: {
+    flexDirection: 'row',
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 8,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editButton: {
+    backgroundColor: COLORS.secondary,
+  },
+  deleteButton: {
+    backgroundColor: COLORS.error,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: COLORS.primary,
+    marginTop: 12,
+    fontSize: 16,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  emptySubText: {
     textAlign: 'center',
-    marginBottom: 10,
+    fontSize: 14,
+    color: COLORS.lightText,
+    maxWidth: '80%',
   },
   addButton: {
     position: 'absolute',
     right: 20,
     bottom: 20,
-    backgroundColor: '#2ecc71',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
 });
 

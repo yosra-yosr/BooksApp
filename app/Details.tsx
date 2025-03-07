@@ -8,7 +8,12 @@ export default function Details({ route, navigation }: { route: any, navigation:
   return (
     <ScrollView style={styles.container}>
       <View style={styles.detailsContainer}>
-        <Image source={book.image} style={styles.bookImage} />
+        <Image
+  source={typeof book.image === 'string' ? { uri: book.image } : book.image}
+  style={styles.bookImage}
+  resizeMode="contain"
+/>
+        {/* <Image source={book.image} style={styles.bookImage} /> */}
         <Text style={styles.title}>{book.title}</Text>
         <Text style={styles.description}>{book.description}</Text>
         <Text style={styles.price}>${book.price}</Text>
@@ -85,4 +90,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
   },
+  copyright: {
+    fontSize: 12,
+    color: '#888', // Gris clair pour un effet discret
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  
 });

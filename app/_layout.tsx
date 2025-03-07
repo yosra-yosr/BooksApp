@@ -13,6 +13,7 @@ import { CartProvider } from "./cartProvider";
 import AddBookScreen from "./AddBookScreen";
 import BookListScreen from "./BookListScreen";
 import UpdateBookScreen from "./UpdateBookScreen";
+import LoginScreen from "./LoginScreen";
 // Empêcher le splash screen de se cacher automatiquement
 SplashScreen.preventAutoHideAsync();
 
@@ -55,9 +56,10 @@ export default function RootLayout() {
   return (
     <CartProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack.Navigator initialRouteName="Index">
+      <Stack.Navigator initialRouteName="LoginScreen">
   {/* <Stack.Screen name="CrudBooks" component={CrudBooks} options={{ headerShown: false }} /> */}
   {/* <Stack.Screen name="AddBookForm" component={AddBookForm} options={{ title: "Add Book" }} /> */}
+  <Stack.Screen name="LoginScreen" component={LoginScreen} options={{ headerShown: false }} />
   <Stack.Screen name="AddBookScreen" component={AddBookScreen} options={{ headerShown: false }} />
   <Stack.Screen name="BookListScreen" component={BookListScreen} options={{ headerShown: false }} />
   <Stack.Screen name="UpdateBookScreen" component={UpdateBookScreen} options={{ headerShown: false }} />     
