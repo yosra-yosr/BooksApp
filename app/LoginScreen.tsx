@@ -59,7 +59,7 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
           <View style={styles.logoPlaceholder}>
             <Text style={styles.logoText}>LOGO</Text>
           </View>
-          <Text style={styles.appTitle}>Mon Application</Text>
+          <Text style={styles.appTitle}>Booky</Text>
         </View>
 
         <View style={styles.formContainer}>

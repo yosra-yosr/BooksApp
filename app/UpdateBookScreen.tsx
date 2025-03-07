@@ -29,11 +29,11 @@ const UpdateBookScreen = ({ navigation, route }:{ route: any, navigation: any })
   const [description, setDescription] = useState(book.description);
   const [price, setPrice] = useState(book.price.toString());
   const [image, setImage] = useState(book.image);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleUpdateBook = async () => {
-    setError(null);
+    setError("");
     setIsLoading(true);
 
     if (!title.trim()) {
@@ -71,7 +71,7 @@ const UpdateBookScreen = ({ navigation, route }:{ route: any, navigation: any })
       Alert.alert('Succès', 'Le livre a été mis à jour avec succès.');
       navigation.navigate('BookListScreen', { refresh: true });
     } catch (error) {
-      setError(`Erreur lors de la mise à jour du livre : ${error.message}`);
+      setError(`Erreur lors de la mise à jour du livre : ${error}`);
     } finally {
       setIsLoading(false);
     }
@@ -240,6 +240,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  errorContainer:{
+
+  }
 });
 
 export default UpdateBookScreen;
