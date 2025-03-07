@@ -1,25 +1,18 @@
 {
   "books": [
     {
-      "id": "1",
-      "title": "Titre du livre 1",
-      "description": "Description du livre 1",
-      "price": 19.99,
+      "id": "e8b9",
+      "title": "Xhjxgjhgwhg",
+      "description": "Cjxxjgjhx",
+      "price": 88,
       "image": "https://picsum.photos/id/237/200/300"
     },
     {
-      "id": "2",
-      "title": "Titre du livre 2",
-      "description": "Description du livre 2",
-      "price": 29.99,
-      "image": "https://picsum.photos/seed/picsum/200/300"
-    },
-    {
-      "id": "cb57",
-      "title": "Titre du livre 3",
-      "description": "Description du livre 3",
-      "price": 39.99,
-      "image": "https://picsum.photos/200/300/?blur"
+      "id": "1741312472731",
+      "title": "Ddd",
+      "description": "Jgwjgdhfk",
+      "price": 44,
+      "image": "https://picsum.photos/id/237/200/300"
     }
   ]
 }

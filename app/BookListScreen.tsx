@@ -12,8 +12,9 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { initDatabase, getBooks, deleteBook } from './db';
-
+import { initDatabase, getBooks, deleteBook, createBook } from './db';
+import { updateBookInAPI,addBookToAPI,fetchBooksFromAPI } from './api';
+import { SQLiteDatabase } from 'expo-sqlite';
 interface Book {
   id: number;
   title: string;
@@ -33,21 +34,82 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+
+
+  const syncBooks = async (sqliteBooks: Book[], apiBooks: Book[], db: SQLiteDatabase) => {
+    try {
+      const apiBookTitles = new Set(apiBooks.map((book) => book.title));
+      const localBookTitles = new Set(sqliteBooks.map((book) => book.title));
+  
+      // Ajouter les livres locaux absents sur JSON Server
+      for (const book of sqliteBooks) {
+        if (!apiBookTitles.has(book.title)) {
+          const addedBook = await addBookToAPI(book);
+          
+          // Mise à jour locale avec l'ID correct de JSON Server
+          if (addedBook && addedBook.id) {
+            await db.runAsync(`UPDATE book SET id = ? WHERE title = ?;`, [addedBook.id, book.title]);
+          }
+        }
+      }
+  
+      // Ajouter les livres de l'API absents en local
+      for (const book of apiBooks) {
+        if (!localBookTitles.has(book.title)) {
+          await createBook(db, book);
+        }
+      }
+  
+      // Mettre à jour les livres si différences (ex: description, prix, image)
+      for (const localBook of sqliteBooks) {
+        const matchingApiBook = apiBooks.find((apiBook) => apiBook.title === localBook.title);
+        if (matchingApiBook && (
+          localBook.description !== matchingApiBook.description ||
+          localBook.price !== matchingApiBook.price ||
+          localBook.image !== matchingApiBook.image
+        )) {
+          await updateBookInAPI(localBook);
+        }
+      }
+  
+      console.log("Synchronisation terminée !");
+    } catch (error) {
+      console.error("Erreur lors de la synchronisation :", error);
+    }
+  };
+  
+  
+
+
   const fetchBooks = async () => {
     setIsLoading(true);
     try {
       const db = await initDatabase();
-      const result = await getBooks(db);
-      setBooks(result);
+  
+      // Récupérer les livres depuis SQLite et JSON Server
+      const sqliteBooks = await getBooks(db);
+      const apiBooks = await fetchBooksFromAPI();
+  
+      // Synchroniser les données
+      await syncBooks(sqliteBooks, apiBooks, db);
+  
+      // Recharger après la synchronisation
+      const updatedBooks = await getBooks(db);
+      setBooks(updatedBooks);
+  
       setError(null);
-    } catch (error: any) {
-      setError(`Erreur lors de la récupération des livres: ${error.message}`);
-      console.error('Erreur:', error);
+    } catch (error) {
+      setError(`Erreur lors de la récupération des livres: ${error}`);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
   };
+  
+  
+  
+  
+  
 
   useEffect(() => {
     fetchBooks();
@@ -69,24 +131,22 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
     
   };
 
-  const handleDelete = async (bookId: number, bookTitle: string) => {
+  const handleDelete = async (bookId: number, bookTitle: string) => { 
+    console.log(`Tentative de suppression: ID=${bookId}, Titre="${bookTitle}"`);
+  
     Alert.alert(
       'Confirmation de suppression',
       `Êtes-vous sûr de vouloir supprimer "${bookTitle}" ?`,
       [
-        {
-          text: 'Annuler',
-          style: 'cancel',
-        },
+        { text: 'Annuler', style: 'cancel' },
         {
           text: 'Supprimer',
           style: 'destructive',
           onPress: async () => {
             try {
               const db = await initDatabase();
-              await deleteBook(db, bookId);
-              // Rafraîchir la liste après la suppression
-              fetchBooks();
+              await deleteBook(db, bookId); // Suppression SQLite
+              fetchBooks(); // Rafraîchir la liste
             } catch (error: any) {
               setError(`Erreur lors de la suppression: ${error.message}`);
               console.error('Erreur de suppression:', error);
@@ -97,6 +157,8 @@ const BookListScreen: React.FC<BookListScreenProps> = ({ navigation, route }) =>
       { cancelable: true }
     );
   };
+  
+  
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);

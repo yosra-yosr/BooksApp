@@ -55,7 +55,7 @@ export default function RootLayout() {
   return (
     <CartProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack.Navigator initialRouteName="BookListScreen">
+      <Stack.Navigator initialRouteName="Index">
   {/* <Stack.Screen name="CrudBooks" component={CrudBooks} options={{ headerShown: false }} /> */}
   {/* <Stack.Screen name="AddBookForm" component={AddBookForm} options={{ title: "Add Book" }} /> */}
   <Stack.Screen name="AddBookScreen" component={AddBookScreen} options={{ headerShown: false }} />

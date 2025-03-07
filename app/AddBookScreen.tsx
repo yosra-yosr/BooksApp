@@ -29,7 +29,7 @@ const AddBookScreen: React.FC<AddBookScreenProps> = ({ navigation, route }) => {
   const handleAddBook = async () => {
     setError(null);
     setIsLoading(true);
-
+  
     // Validation des entrées
     if (!title.trim()) {
       setError('Le titre est requis');
@@ -51,18 +51,20 @@ const AddBookScreen: React.FC<AddBookScreenProps> = ({ navigation, route }) => {
       setIsLoading(false);
       return;
     }
-
+  
     const priceNumber = parseFloat(price);
-
+  
     try {
       const db = await initDatabase();
       const newBook = {
+        id: Date.now().toString(), // Utiliser un ID basé sur le timestamp pour garantir une valeur unique
         title: title.trim(),
         description: description.trim(),
         price: priceNumber,
-        image: image.trim(), // Assurez-vous que le nom correspond à votre schéma
+        image: image.trim(),
       };
-
+  
+      // Créer le livre en local et dans l'API avec le même ID
       await createBook(db, newBook);
       
       // Navigation avec paramètre de rafraîchissement
@@ -73,6 +75,8 @@ const AddBookScreen: React.FC<AddBookScreenProps> = ({ navigation, route }) => {
       setIsLoading(false);
     }
   };
+  
+  
 
   return (
     <KeyboardAvoidingView 
