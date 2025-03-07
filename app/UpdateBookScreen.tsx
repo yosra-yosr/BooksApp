@@ -14,7 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { initDatabase, updateBook } from './db';
 
-const UpdateBookScreen = ({ navigation, route }) => {
+const UpdateBookScreen = ({ navigation, route }:{ route: any, navigation: any }) => {
   const { book } = route.params || {};
 
   if (!book) {

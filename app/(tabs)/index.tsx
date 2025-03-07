@@ -231,4 +231,11 @@ const styles = StyleSheet.create({
     width: 40,
     tintColor: COLORS.secondary,
   },
+  copyright: {
+    fontSize: 12,
+    color: '#888', // Gris clair pour un effet discret
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  
 });
